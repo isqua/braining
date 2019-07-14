@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.79c46523f4cbf8704877f8ec95405146.js"
+  "/braining/precache-manifest.d6a7017c3fa8a9df31efd0b368f19330.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "braining"});
