@@ -43,7 +43,7 @@ const getNumber = (length: number): number => Math.floor(
     ),
 );
 
-const getNumberBetween = (start: number, end: number): number => (
+const getNumberBetween = (start: number, end: number): number => Math.floor(
     start + Math.random() * (end - start)
 );
 
@@ -51,12 +51,26 @@ const input = document.querySelector<HTMLInputElement>('.userAnswer');
 
 const restoreFocus = () => setTimeout(() => input && input.focus(), 10);
 
+const LEVELS = [
+    () => [ getNumber(1), getNumber(1) ],
+    () => [ getNumber(1), getNumber(1) ],
+    () => [ getNumber(1), getNumber(1) ],
+    () => [ getNumber(1), getNumber(1) ],
+    () => [ getNumber(1), getNumber(1) ],
+    () => [ getNumberBetween(10, 19), getNumber(1) ],
+    () => [ getNumber(1), getNumberBetween(10, 19) ],
+    () => [ getNumberBetween(10, 19), getNumber(1) ],
+    () => [ getNumber(1), getNumberBetween(10, 19) ],
+    () => [ getNumber(2), getNumber(1) ],
+]
+
 @Component({
     components: {
         AnswersBar,
         Icon,
     },
 })
+
 export default class Calculating extends Vue {
     private answers: boolean[] = [];
     private task = {
@@ -72,8 +86,7 @@ export default class Calculating extends Vue {
     private generateTask() {
         const operator = Math.random() < 0.65 ? '+' : '−';
 
-        const first = getNumber(1);
-        const second = getNumber(1);
+        let [ first, second ] = LEVELS[this.answers.length]();
         let left;
         let right;
 
@@ -113,7 +126,7 @@ export default class Calculating extends Vue {
     }
 
     private checkFinish() {
-        return this.answers.length === 10;
+        return this.answers.length === LEVELS.length;
     }
 
     private endGame() {
@@ -122,13 +135,13 @@ export default class Calculating extends Vue {
     }
 
     private refresh() {
-        this.task = this.generateTask();
-        this.userAnswer = '';
-        this.correct = null;
-
         if (this.checkFinish()) {
              this.endGame();
         } else {
+            this.task = this.generateTask();
+            this.userAnswer = '';
+            this.correct = null;
+
             restoreFocus();
         }
     }
