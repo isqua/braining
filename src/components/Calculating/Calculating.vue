@@ -1,19 +1,26 @@
 <template>
-    <form class="calculating" @submit="checkOnClick" action="#" method="post">
+    <form class="calculating" v-bind:class="{ message: correct !== null }" @submit="checkOnClick" action="#" method="post">
         <AnswersBar v-bind:answers=answers />
 
-        <p class="question">{{ task.left }} {{ task.operator }} {{ task.right }}</p>
-        <p class="equals">=</p>
+        <div v-if="!isFinish">
+            <p class="question">
+                <span class="left">{{ task.left }}</span>
+                <span class="operator">{{ task.operator }}</span>
+                <span class="right">{{ task.right }}</span>
+            </p>
 
-        <p>
-            <input class="userAnswer" type="tel" name="userAnswer" id="userAnswer" v-model="userAnswer"
-                v-bind:size="Math.max(3, this.userAnswer.length)"
-                v-on:input="checkOnEdit">
-        </p>
+            <p class="equals">=</p>
 
-        <p>
-            <button class="check" type="submit">Check</button>
-        </p>
+            <p>
+                <input class="userAnswer" type="tel" name="userAnswer" id="userAnswer" v-model="userAnswer"
+                    v-bind:size="Math.max(3, this.userAnswer.length)"
+                    v-on:input="checkOnEdit">
+            </p>
+
+            <p>
+                <button class="check" type="submit">Check</button>
+            </p>
+        </div>
 
         <div v-if="correct !== null" class="message">
             <p v-if="correct === true" class="correct">
@@ -33,36 +40,13 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import AnswersBar from './AnswersBar.vue';
-import Icon from './Icon.vue';
-
-const getNumber = (length: number): number => Math.floor(
-    getNumberBetween(
-        Math.pow(10, length - 1),
-        Math.pow(10, length),
-    ),
-);
-
-const getNumberBetween = (start: number, end: number): number => Math.floor(
-    start + Math.random() * (end - start)
-);
+import AnswersBar from '../AnswersBar.vue';
+import Icon from '../Icon.vue';
+import Levels, { Task } from './Levels';
 
 const input = document.querySelector<HTMLInputElement>('.userAnswer');
 
 const restoreFocus = () => setTimeout(() => input && input.focus(), 10);
-
-const LEVELS = [
-    () => [ getNumber(1), getNumber(1) ],
-    () => [ getNumber(1), getNumber(1) ],
-    () => [ getNumber(1), getNumber(1) ],
-    () => [ getNumber(1), getNumber(1) ],
-    () => [ getNumber(1), getNumber(1) ],
-    () => [ getNumberBetween(10, 19), getNumber(1) ],
-    () => [ getNumber(1), getNumberBetween(10, 19) ],
-    () => [ getNumberBetween(10, 19), getNumber(1) ],
-    () => [ getNumber(1), getNumberBetween(10, 19) ],
-    () => [ getNumber(2), getNumber(1) ],
-]
 
 @Component({
     components: {
@@ -70,52 +54,31 @@ const LEVELS = [
         Icon,
     },
 })
-
 export default class Calculating extends Vue {
+    private Levels = Levels();
     private answers: boolean[] = [];
-    private task = {
-        left: getNumber(1),
-        right: getNumber(1),
-        operator: '+',
-    };
     private userAnswer = '';
+    private task: Task = this.Levels.next().value;
     private correct: boolean | null = null;
     private isFinish = false;
     private score = 0;
 
-    private generateTask() {
-        const operator = Math.random() < 0.65 ? '+' : '−';
+    private refresh() {
+        const level = this.Levels.next();
 
-        let [ first, second ] = LEVELS[this.answers.length]();
-        let left;
-        let right;
-
-        if (operator === '−') {
-            left = Math.max(first, second);
-            right = Math.min(first, second);
+        if (level.done) {
+             this.endGame();
         } else {
-            left = first;
-            right = second;
-        }
+            this.task = level.value;
+            this.userAnswer = '';
+            this.correct = null;
 
-        return {
-            left,
-            right,
-            operator,
-        };
-    }
-
-    private getTaskSolution() {
-        switch (this.task.operator) {
-            case '+':
-                return this.task.left + this.task.right;
-            case '−':
-                return this.task.left - this.task.right;
+            restoreFocus();
         }
     }
 
     private getAnswer() {
-        return parseInt(this.userAnswer, 0) === this.getTaskSolution();
+        return this.task ? this.task.checkAnswer(parseInt(this.userAnswer, 10)) : false;
     }
 
     private checkAnswer(answer: boolean) {
@@ -126,24 +89,12 @@ export default class Calculating extends Vue {
     }
 
     private checkFinish() {
-        return this.answers.length === LEVELS.length;
+        return this.answers.length === 10;
     }
 
     private endGame() {
         this.isFinish = true;
         this.score = this.answers.filter(Boolean).length;
-    }
-
-    private refresh() {
-        if (this.checkFinish()) {
-             this.endGame();
-        } else {
-            this.task = this.generateTask();
-            this.userAnswer = '';
-            this.correct = null;
-
-            restoreFocus();
-        }
     }
 
     private checkOnEdit(e: Event) {
@@ -175,6 +126,13 @@ export default class Calculating extends Vue {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.calculating.message .userAnswer {
+    visibility: hidden;
+    opacity: 0;
+    font-size: 0;
+    caret-color: transparent;
+}
+
 .userAnswer {
     background: transparent;
     border: none;
@@ -206,6 +164,31 @@ p {
     margin: 0;
 }
 
+.question {
+    display: flex;
+}
+
+.left,
+.right {
+    flex-basis: 50%;
+    flex-grow: 1;
+}
+
+.left {
+    text-align: right;
+    padding-right: 0.3em;
+}
+
+.right {
+    text-align: left;
+    padding-left: 0.3em;
+}
+
+.operator {
+    flex-basis: content;
+    flex-shrink: 0;
+}
+
 .message {
     position: absolute;
     top: 30px;
@@ -214,6 +197,6 @@ p {
     right: 0;
     background: #003554;
     text-align: center;
-    padding-top: 90px;
+    padding-top: 150px;
 }
 </style>

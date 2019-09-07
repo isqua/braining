@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Calculating from './components/Calculating.vue';
+import Calculating from './components/Calculating/Calculating.vue';
 
 @Component({
     components: {
